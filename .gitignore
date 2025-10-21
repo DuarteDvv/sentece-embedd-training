@@ -16,3 +16,4 @@ models/
 # Large data files
 raw_.json
 evaluation_data.json
+wandb/

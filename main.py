@@ -3,6 +3,7 @@ from sentence_transformers.losses import MultipleNegativesRankingLoss, GISTEmbed
 from sentence_transformers import SentenceTransformer, SentenceTransformerTrainingArguments
 from sentence_transformers.training_args import BatchSamplers
 import torch
+import wandb
 
 from utils.get_dataset import get_datasets_raw
 from utils.evaluator import create_ir_evaluator
@@ -16,6 +17,22 @@ def print_results(results: dict):
 
 
 def main():
+
+    run = wandb.init(
+       
+        project="hence",
+        name="v0-serafim-gistembedloss",
+        # Track hyperparameters and run metadata.
+        config={
+            "model_name": 'PORTULAN/serafim-100m-portuguese-pt-sentence-encoder',
+            "guide_model_name": 'PORTULAN/serafim-100m-portuguese-pt-sentence-encoder',
+            "dataset_path": PATH,
+            "loss_function": "GISTEmbedLoss",
+           
+        },
+    )
+
+
     print("\n" + "="*50)
     if torch.cuda.is_available():
         device = 'cuda'
@@ -32,7 +49,7 @@ def main():
     )
 
     guide = SentenceTransformer(
-        'sentence-transformers/all-MiniLM-L6-v2',
+        'PORTULAN/serafim-100m-portuguese-pt-sentence-encoder',
         device=device
     )
 
@@ -54,26 +71,34 @@ def main():
     args = SentenceTransformerTrainingArguments(
         output_dir="models/v0/", # diretório para salvar o modelo e checkpoints
         num_train_epochs=5, # número de épocas de treinamento
-        per_device_train_batch_size=16, # tamanho do batch de treinamento por GPU/CPU
-        per_device_eval_batch_size=16, # tamanho do batch de avaliação por GPU/CPU
-        warmup_ratio=0.1, # proporção de passos de aquecimento para o agendador de taxa de aprendizado
+        per_device_train_batch_size=32, # tamanho do batch de treinamento por GPU/CPU
+        per_device_eval_batch_size=32, # tamanho do batch de avaliação por GPU/CPU
         fp16=True,  # usar precisão mista (float16) se suportado
         bf16=False,  # usar precisão mista (bfloat16) se suportado
         batch_sampler=BatchSamplers.NO_DUPLICATES,  # evitar duplicatas no batch
 
-        # Reguladores
+        # reguladores
         weight_decay=0.01,  # taxa de decaimento de peso para o otimizador
         learning_rate=2e-5,  # taxa de aprendizado inicial
         max_grad_norm=1.0,  # clipping de gradiente para evitar explosão
+        gradient_accumulation_steps = 1,  # passos de acumulação de gradiente
+        warmup_ratio=0.1, # proporção de passos de aquecimento para o agendador de taxa de aprendizado
+        warmup_steps = 0,  # número de passos de aquecimento (se definido, sobrescreve warmup_ratio)
+        lr_scheduler_type = 'linear',  # tipo de agendador de taxa de aprendizado
 
-        # Parâmetros opcionais de rastreamento/depuração: 
+
+        # rastreamento/depuração: 
         eval_strategy="steps",
-        eval_steps=500, # avaliar a cada 500 passos
+        eval_steps=250, # avaliar a cada 250 passos
         save_strategy="steps",
-        save_steps=1000, # salvar o modelo a cada 1000 passos
-        save_total_limit=2, # manter apenas os 2 últimos checkpoints
-        logging_steps=100, # registrar métricas a cada 100 passos
-        # run_name="mpnet-base-all-nli-triplet",  # Usado no W&B se `wandb` estiver instalado
+        save_steps=250, # salvar o modelo a cada 250 passos
+        save_total_limit=3, # manter apenas os 3 últimos checkpoints
+        logging_steps=10, # registrar métricas a cada 10 passos
+        load_best_model_at_end=True,
+        metric_for_best_model="eval_loss",  # métrica para determinar o melhor modelo
+        greater_is_better=False,
+
+        report_to=["wandb"],  # Relatar métricas para W&B
     )
 
 
@@ -102,8 +127,10 @@ def main():
 
     model.save_pretrained("models/v0/final")
 
+    run.finish()
+
 
 
 
 if __name__ == "__main__":  
-    main()
+    main()  
