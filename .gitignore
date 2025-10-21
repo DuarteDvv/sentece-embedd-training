@@ -12,3 +12,7 @@ tmp_trainer/
 output_model/
 models/
 .env
+
+# Large data files
+raw_.json
+evaluation_data.json
