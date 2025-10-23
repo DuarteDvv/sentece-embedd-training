@@ -17,3 +17,5 @@ models/
 raw_.json
 evaluation_data.json
 wandb/
+resume_.json
+summaries.json

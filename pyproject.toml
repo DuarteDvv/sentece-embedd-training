@@ -9,4 +9,5 @@ dependencies = [
     "sentence-transformers[train]>=5.1.1",
     "torch>=2.9.0",
     "transformers>=4.57.1",
+    "wandb>=0.22.2",
 ]
