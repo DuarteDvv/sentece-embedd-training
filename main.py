@@ -49,9 +49,11 @@ def main():
     )
 
     guide = SentenceTransformer(
-        'PORTULAN/serafim-100m-portuguese-pt-sentence-encoder',
+        'PORTULAN/serafim-100m-portuguese-pt-sentence-encoder',              #"sentence-transformers/paraphrase-MiniLM-L6-v2",
         device=device
     )
+
+
 
 
     ds_train, ds_val, ds_test = get_datasets_raw(PATH)
@@ -62,34 +64,34 @@ def main():
     print("Avaliando modelo no conjunto de teste pré treino...")
     print("="*50 + "\n")
     test_evaluator = create_ir_evaluator(ds_test, name="test")
-    test_results = test_evaluator(model)
-    
-    print_results(test_results)
+    test_results_start = test_evaluator(model)
+
 
     val_evaluator = create_ir_evaluator(ds_val, name="val")
 
     args = SentenceTransformerTrainingArguments(
         output_dir="models/v0/", # diretório para salvar o modelo e checkpoints
-        num_train_epochs=15, # número de épocas de treinamento
-        per_device_train_batch_size=8, # tamanho do batch de treinamento por GPU/CPU
-        per_device_eval_batch_size=8, # tamanho do batch de avaliação por GPU/CPU
+        num_train_epochs=3, # número de épocas de treinamento
+        per_device_train_batch_size=32, # tamanho do batch de treinamento por GPU/CPU
+        per_device_eval_batch_size=32, # tamanho do batch de avaliação por GPU/CPU
         fp16=True,  # usar precisão mista (float16) se suportado
         bf16=False,  # usar precisão mista (bfloat16) se suportado
         batch_sampler=BatchSamplers.NO_DUPLICATES,  # evitar duplicatas no batch
 
         # reguladores
         weight_decay=0.01,  # taxa de decaimento de peso para o otimizador
-        learning_rate=2e-5,  # taxa de aprendizado inicial
+        learning_rate=5e-5,  # taxa de aprendizado inicial
         max_grad_norm=1.0,  # clipping de gradiente para evitar explosão
-        gradient_accumulation_steps = 2,  # passos de acumulação de gradiente
+        gradient_accumulation_steps = 1,  # passos de acumulação de gradiente
         warmup_ratio=0.1, # proporção de passos de aquecimento para o agendador de taxa de aprendizado
         warmup_steps = 0,  # número de passos de aquecimento 
-        lr_scheduler_type = 'cosine',  # tipo de agendador de taxa de aprendizado
+        lr_scheduler_type = "cosine", #'cosine',  # tipo de agendador de taxa de aprendizado
 
 
         # rastreamento/depuração: 
         eval_strategy="steps",
         eval_steps=250, # avaliar a cada x passos
+        eval_on_start=True,  # avaliar no início do treinamento
         save_strategy="steps",
         save_steps=250, # salvar o modelo a cada x passos
         save_total_limit=3, # manter apenas os x últimos checkpoints
@@ -123,7 +125,14 @@ def main():
     print("="*50 + "\n")
     test_results = create_ir_evaluator(ds_test, name="test")(model)
 
+    print("\n" + "="*50)
+    print("Resultados Finais:")
+    print("Antes do Treinamento:")
+    print_results(test_results_start)
+    print("Depois do Treinamento:")
     print_results(test_results)
+    print("="*50 + "\n")
+
 
     model.save_pretrained("models/v0/final")
 
