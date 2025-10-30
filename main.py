@@ -71,7 +71,7 @@ def main():
 
     args = SentenceTransformerTrainingArguments(
         output_dir="models/v0/", # diretório para salvar o modelo e checkpoints
-        num_train_epochs=3, # número de épocas de treinamento
+        num_train_epochs=10, # número de épocas de treinamento
         per_device_train_batch_size=32, # tamanho do batch de treinamento por GPU/CPU
         per_device_eval_batch_size=32, # tamanho do batch de avaliação por GPU/CPU
         fp16=True,  # usar precisão mista (float16) se suportado
@@ -79,11 +79,11 @@ def main():
         batch_sampler=BatchSamplers.NO_DUPLICATES,  # evitar duplicatas no batch
 
         # reguladores
-        weight_decay=0.01,  # taxa de decaimento de peso para o otimizador
-        learning_rate=5e-5,  # taxa de aprendizado inicial
+        weight_decay=0.1,  # taxa de decaimento de peso para o otimizador
+        learning_rate=1e-5,  # taxa de aprendizado inicial
         max_grad_norm=1.0,  # clipping de gradiente para evitar explosão
         gradient_accumulation_steps = 1,  # passos de acumulação de gradiente
-        warmup_ratio=0.1, # proporção de passos de aquecimento para o agendador de taxa de aprendizado
+        warmup_ratio=0.05, # proporção de passos de aquecimento para o agendador de taxa de aprendizado
         warmup_steps = 0,  # número de passos de aquecimento 
         lr_scheduler_type = "cosine", #'cosine',  # tipo de agendador de taxa de aprendizado
 
@@ -99,6 +99,7 @@ def main():
         load_best_model_at_end=True,
         metric_for_best_model="eval_loss",  # métrica para determinar o melhor modelo
         greater_is_better=False,
+
 
         report_to=["wandb"],  # Relatar métricas para W&B
     )
